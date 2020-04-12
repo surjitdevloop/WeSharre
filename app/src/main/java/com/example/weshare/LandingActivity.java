@@ -54,7 +54,7 @@ public class LandingActivity extends AppCompatActivity {
     private boolean isInitial = true;
     private int visibleItemPos;
 
-    private String collectionPath = "and2";
+    private String collectionPath = "videoList";
     private View gesture;
 
     @SuppressLint("ClickableViewAccessibility")
@@ -87,7 +87,7 @@ public class LandingActivity extends AppCompatActivity {
         FirestoreRecyclerOptions options = new FirestoreRecyclerOptions.Builder<VideoData>()
                 .setLifecycleOwner(this)
                 .setQuery(firebaseFirestore.collection(collectionPath)
-                                .orderBy("url"),
+                                .orderBy("timestamp"),
                         snapshot -> {
                             Log.e(TAG, "parseSnapshot");
                             VideoData object = snapshot.toObject(VideoData.class);
