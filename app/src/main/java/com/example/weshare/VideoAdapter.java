@@ -7,20 +7,19 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 
-import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
-import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.firebase.ui.firestore.paging.FirestorePagingAdapter;
+import com.firebase.ui.firestore.paging.FirestorePagingOptions;
 
-public class VideoAdapter extends FirestoreRecyclerAdapter<VideoData, PlayerViewHolder> {
+public class VideoAdapter extends FirestorePagingAdapter<VideoData, PlayerViewHolder> {
 
 
     private static final String TAG = "VideoAdapter";
     private Context context;
 
-    public VideoAdapter(Context context, FirestoreRecyclerOptions options) {
+    public VideoAdapter(Context context, FirestorePagingOptions<VideoData> options) {
         super(options);
         this.context = context;
     }
-
 
     @NonNull
     @Override
@@ -37,5 +36,6 @@ public class VideoAdapter extends FirestoreRecyclerAdapter<VideoData, PlayerView
         Log.e(TAG, "model.getUrl() " + model.getUrl());
         holder.onBind(model);
     }
+
 
 }

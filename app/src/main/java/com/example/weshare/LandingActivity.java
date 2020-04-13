@@ -1,20 +1,28 @@
 package com.example.weshare;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.paging.PagedList;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.firebase.ui.firestore.SnapshotParser;
+import com.firebase.ui.firestore.paging.FirestorePagingOptions;
+import com.firebase.ui.firestore.paging.LoadingState;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -54,8 +62,17 @@ public class LandingActivity extends AppCompatActivity {
     private boolean isInitial = true;
     private int visibleItemPos;
 
-    private String collectionPath = "videoList";
     private View gesture;
+    private PagedList.Config config = new PagedList.Config.Builder()
+            .setEnablePlaceholders(false)
+            .setPrefetchDistance(20)
+            .setPageSize(20)
+            .build();
+
+    ViewGroup emptyVG;
+    ImageView emptyImage;
+    TextView emptyText;
+    ProgressBar progressBar;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -69,6 +86,12 @@ public class LandingActivity extends AppCompatActivity {
         videoDataList = new ArrayList<>();
         mRecyclerView = findViewById(R.id.video_recycler_video);
         gesture = findViewById(R.id.gestureListener);
+        emptyVG = findViewById(R.id.viewEmpty);
+        emptyImage = findViewById(R.id.emptyImage);
+        emptyText = findViewById(R.id.emptyText);
+
+        progressBar = findViewById(R.id.progressBar);
+
         gesture.setOnClickListener(v -> Log.e(TAG, "gesture Clicked"));
         initRecyclerView();
 
@@ -84,19 +107,56 @@ public class LandingActivity extends AppCompatActivity {
 
     private void initRecyclerView() {
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        FirestoreRecyclerOptions options = new FirestoreRecyclerOptions.Builder<VideoData>()
+
+        FirestorePagingOptions<VideoData> pagingOptions = new FirestorePagingOptions.Builder<VideoData>()
                 .setLifecycleOwner(this)
-                .setQuery(firebaseFirestore.collection(collectionPath)
-                                .orderBy("timestamp"),
-                        snapshot -> {
+                .setQuery(firebaseFirestore.collection(Const.COLLECTION_PATH)
+                                .orderBy(Const.COLLECTION_ORDER),
+                        config,
+                        (SnapshotParser<VideoData>) snapshot -> {
                             Log.e(TAG, "parseSnapshot");
                             VideoData object = snapshot.toObject(VideoData.class);
                             Log.e(TAG, "url " + object.getUrl());
                             videoDataList.add(object);
                             setNV(videoDataList);
                             return object;
-                        }).build();
-        videoAdapter = new VideoAdapter(this, options);
+                        })
+                .build();
+
+
+        videoAdapter = new VideoAdapter(this, pagingOptions) {
+            @Override
+            protected void onLoadingStateChanged(@NonNull LoadingState state) {
+                switch (state) {
+                    case LOADING_INITIAL:
+                        Log.e("Pagging_log", "LOADING_INITIAL");
+                        break;
+
+                    case LOADING_MORE:
+                        Log.e("Pagging_log", "LOADING_MORE");
+                        break;
+                    case LOADED:
+                        setEmptyViewVisibility(false, null);
+                        Log.e("Pagging_log", "LOADED " + getItemCount());
+                        break;
+                    case ERROR:
+                        setEmptyViewVisibility(true, "Error while featching data.");
+                        retry();
+                        Log.e("Pagging_log", "ERROR ");
+                        break;
+                    case FINISHED:
+                        progressBar.setVisibility(View.GONE);
+                        if (getItemCount() == 0) {
+                            setEmptyViewVisibility(true, null);
+                        } else {
+                            setEmptyViewVisibility(false, null);
+                        }
+                        Log.e("Pagging_log", "FINISHED ");
+                        break;
+                }
+            }
+        };
+
         mRecyclerView.setAdapter(videoAdapter);
 
 
@@ -120,11 +180,25 @@ public class LandingActivity extends AppCompatActivity {
 
 
         findViewById(R.id.record_button).setOnClickListener(v -> {
-            /*
             Intent intent = new Intent(LandingActivity.this, RecordActivity.class);
             startActivity(intent);
-            finish();*/
+            finish();
         });
+    }
+
+    private void setEmptyViewVisibility(boolean value, String error) {
+        if (value) {
+            emptyVG.setVisibility(View.VISIBLE);
+            if (error == null) {
+                emptyImage.setImageDrawable(getDrawable(R.drawable.empty));
+                emptyText.setText("");
+            } else {
+                emptyImage.setImageDrawable(getDrawable(R.drawable.ic_error));
+                emptyText.setText(error);
+            }
+        } else {
+            emptyVG.setVisibility(View.GONE);
+        }
     }
 
     private void setNV(ArrayList<VideoData> videoData) {
