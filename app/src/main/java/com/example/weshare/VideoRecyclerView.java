@@ -43,6 +43,11 @@ import com.google.android.exoplayer2.util.Util;
 import java.util.ArrayList;
 
 public class VideoRecyclerView extends RecyclerView {
+    interface OnSmoothSScrollNext {
+        void OnSmoothSScrollNext();
+    }
+
+    OnSmoothSScrollNext onSmoothSScrollNext;
 
     private static final String TAG = "VideoRecyclerView";
 
@@ -78,6 +83,9 @@ public class VideoRecyclerView extends RecyclerView {
         init(context);
     }
 
+    public void setOnSmoothSScrollNext(OnSmoothSScrollNext onSmoothSScrollNext) {
+        this.onSmoothSScrollNext = onSmoothSScrollNext;
+    }
 
     private void init(Context context) {
         this.context = context.getApplicationContext();
@@ -114,11 +122,11 @@ public class VideoRecyclerView extends RecyclerView {
 
                     // There's a special case when the end of the list has been reached.
                     // Need to handle that with this bit of logic
-                    if (!recyclerView.canScrollVertically(1)) {
-                        playVideo(true);
-                    } else {
+//                    if (!recyclerView.canScrollVertically(1)) {
+//                        playVideo(true);
+//                    } else {
                         playVideo(false);
-                    }
+//                    }
                 }
             }
 
@@ -172,7 +180,8 @@ public class VideoRecyclerView extends RecyclerView {
                         break;
                     case Player.STATE_ENDED:
                         Log.d(TAG, "onPlayerStateChanged: Video ended.");
-                        videoPlayer.seekTo(0);
+//                        videoPlayer.seekTo(0);
+                        onSmoothSScrollNext.OnSmoothSScrollNext();
                         break;
                     case Player.STATE_IDLE:
 

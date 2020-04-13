@@ -27,7 +27,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 
-public class LandingActivity extends AppCompatActivity {
+public class LandingActivity extends AppCompatActivity implements VideoRecyclerView.OnSmoothSScrollNext {
+
+
+
 
     private static final String TAG = "LandingActivity";
     private static final int UI_ANIMATION_DELAY = 300;
@@ -85,6 +88,7 @@ public class LandingActivity extends AppCompatActivity {
         firebaseFirestore = FirebaseFirestore.getInstance();
         videoDataList = new ArrayList<>();
         mRecyclerView = findViewById(R.id.video_recycler_video);
+        mRecyclerView.setOnSmoothSScrollNext(this);
         gesture = findViewById(R.id.gestureListener);
         emptyVG = findViewById(R.id.viewEmpty);
         emptyImage = findViewById(R.id.emptyImage);
@@ -114,7 +118,7 @@ public class LandingActivity extends AppCompatActivity {
                                 .orderBy(Const.COLLECTION_ORDER),
                         config,
                         (SnapshotParser<VideoData>) snapshot -> {
-                            Log.e(TAG, "parseSnapshot");
+                            Log.e(TAG, "parseSnapshot ");
                             VideoData object = snapshot.toObject(VideoData.class);
                             Log.e(TAG, "url " + object.getUrl());
                             videoDataList.add(object);
@@ -136,7 +140,7 @@ public class LandingActivity extends AppCompatActivity {
                         Log.e("Pagging_log", "LOADING_MORE");
                         break;
                     case LOADED:
-                        setEmptyViewVisibility(false, null);
+//                        setEmptyViewVisibility(false, null);
                         Log.e("Pagging_log", "LOADED " + getItemCount());
                         break;
                     case ERROR:
@@ -158,7 +162,6 @@ public class LandingActivity extends AppCompatActivity {
         };
 
         mRecyclerView.setAdapter(videoAdapter);
-
 
         mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -213,30 +216,18 @@ public class LandingActivity extends AppCompatActivity {
     }
 
 
+    @Override
+    public void OnSmoothSScrollNext() {
+        showNextItem(-12);
+    }
+
     GestureDetector.OnGestureListener onGestureListener = new GestureDetector.SimpleOnGestureListener() {
 
         @Override
         public boolean onFling(MotionEvent event1, MotionEvent event2,
                                float velocityX, float velocityY) {
             Log.e(TAG, "onFling: event1" + event1.toString());
-            if (velocityY < 0) { //Up nextItem show
-                visibleItemPos += 1;
-                if (visibleItemPos >= videoAdapter.getItemCount()) {
-                    visibleItemPos = 0;
-                    mRecyclerView.scrollToPosition(visibleItemPos);
-                } else {
-                    mRecyclerView.smoothScrollToPosition(visibleItemPos);
-                }
-
-            } else {//Up previousItem show
-                visibleItemPos -= 1;
-                if (visibleItemPos < 0) {
-                    visibleItemPos = videoAdapter.getItemCount() - 1;
-                    mRecyclerView.scrollToPosition(visibleItemPos);
-                } else {
-                    mRecyclerView.smoothScrollToPosition(visibleItemPos);
-                }
-            }
+            showNextItem(velocityY);
 
 
             return true;
@@ -254,6 +245,29 @@ public class LandingActivity extends AppCompatActivity {
             return super.onDown(e);
         }
     };
+
+    private void showNextItem(float velocityY) {
+        if (velocityY < 0) { //Up nextItem show
+            visibleItemPos += 1;
+            if (visibleItemPos >= videoAdapter.getItemCount()) {
+                visibleItemPos = 0;
+                mRecyclerView.smoothScrollToPosition(visibleItemPos);
+//                videoAdapter.refresh();
+//                progressBar.setVisibility(View.VISIBLE);
+            } else {
+                mRecyclerView.smoothScrollToPosition(visibleItemPos);
+            }
+
+        } else {//Down previousItem show
+            visibleItemPos -= 1;
+            if (visibleItemPos < 0) {
+                visibleItemPos = videoAdapter.getItemCount() - 1;
+                mRecyclerView.smoothScrollToPosition(visibleItemPos);
+            } else {
+                mRecyclerView.smoothScrollToPosition(visibleItemPos);
+            }
+        }
+    }
 
 
     // Fullscreen Setting
@@ -292,4 +306,5 @@ public class LandingActivity extends AppCompatActivity {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
     }
+
 }
